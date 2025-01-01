@@ -12,10 +12,10 @@
 class Thermister{
 public:
     Thermister(uint8_t pin, uint32_t seriesResister = 10000, uint8_t bufferSize = 16,
-               uint16_t supplyVoltage = 3300, uint16_t beta = 3950, float t0 = 298.15, uint16_t r0 = 10000):
+               uint16_t supplyVoltageMv = 3300, uint16_t beta = 3950, float t0 = 298.15, uint16_t r0 = 10000):
             _pin(pin),
             _seriesResister(seriesResister),
-            _supplyVoltage(supplyVoltage),
+            _supplyVoltage(supplyVoltageMv),
             _beta(beta), _t0(t0), _r0(r0)
     {
         _pin = pin;
@@ -32,7 +32,7 @@ public:
             delay(10);
         }
         float voltage = smaVoltage / 1000;
-        float R_NTC = _seriesResister * (3.3 - voltage) / voltage;
+        float R_NTC = _seriesResister * (((float)_supplyVoltage / 1000) - voltage) / voltage;
         float tempK = _beta / (log(R_NTC / _r0) + (_beta / _t0));
         return tempK - 273.15;
     }

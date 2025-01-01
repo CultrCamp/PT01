@@ -27,5 +27,12 @@ menu "Project Configuration"
             GPIO number (IOxx) to factory reset
             Some GPIOs are used for other purposes (flash connections, etc.) and cannot be used to blink.
 
+    config LED_GPIO
+        int "LED pin GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 15
+        help
+            GPIO number (IOxx) to factory reset
+            Some GPIOs are used for other purposes (flash connections, etc.) and cannot be used to blink.
 
 endmenu

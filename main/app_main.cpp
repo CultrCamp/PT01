@@ -18,9 +18,6 @@
 
 #define uS_TO_S_FACTOR 1000000ULL /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  55         /* Sleep for 55s will + 5s delay for establishing connection => data reported every 1 minute */
-#define WAKEUP_GPIO CONFIG_BOOT_GPIO       // 깨우기 GPIO 핀
-#define WAKEUP_GPIO_MASK (1ULL << WAKEUP_GPIO) // GPIO 비트 마스크
-#define WAKEUP_GPIO_TRIGGER ESP_EXT1_WAKEUP_ALL_LOW // LOW 레벨 트리거
 
 Thermister thermister1 = Thermister(CONFIG_THERMISTER1_GPIO, 10*1000);
 Thermister thermister2 = Thermister(CONFIG_THERMISTER2_GPIO, 10*1000);
@@ -56,13 +53,13 @@ void measureAndSleep() {
     nvs_close(my_handle);
     // Put device to deep sleep
     ESP_LOGI("main", "Going to sleep now");
-    digitalWrite(15, LOW);
+    digitalWrite(CONFIG_LED_GPIO, LOW);
     esp_deep_sleep_start();
 }
 
 void setup() {
-    pinMode(15, OUTPUT);
-    digitalWrite(15, HIGH);
+    pinMode(CONFIG_LED_GPIO, OUTPUT);
+    digitalWrite(CONFIG_LED_GPIO, HIGH);
     pinMode(CONFIG_BOOT_GPIO, INPUT_PULLUP);
 
     esp_err_t err = nvs_flash_init();
@@ -101,7 +98,7 @@ void setup() {
     bool led = false;
     while (!Zigbee.connected()) {
         ESP_LOGI("ZIGBEE", "connecting");
-        digitalWrite(15, led);
+        digitalWrite(CONFIG_LED_GPIO, led);
         led = !led;
         delay(500);
     }
