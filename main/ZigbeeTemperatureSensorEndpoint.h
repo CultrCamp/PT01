@@ -5,11 +5,11 @@
 #ifndef PIPE_TEMP_SENSOR_ZIGBEETEMPERATURESENSORENDPOINT_H
 #define PIPE_TEMP_SENSOR_ZIGBEETEMPERATURESENSORENDPOINT_H
 
-#include "ZigbeeEP.h"
+#include "ZigbeeEP_m.h"
 
-class  ZigbeeTemperatureSensorEndpoint: public ZigbeeEP {
+class  ZigbeeTemperatureSensorEndpoint: public ZigbeeEP_M {
 public:
-    ZigbeeTemperatureSensorEndpoint(uint8_t endpoint): ZigbeeEP(endpoint) {
+    ZigbeeTemperatureSensorEndpoint(uint8_t endpoint): ZigbeeEP_M(endpoint) {
         _device_id = ESP_ZB_HA_TEMPERATURE_SENSOR_DEVICE_ID;
         if(endpoint == 1) {
             esp_zb_temperature_sensor_cfg_t temp_sensor_cfg = ESP_ZB_DEFAULT_TEMPERATURE_SENSOR_CONFIG();

@@ -11,6 +11,8 @@
 #include "nvs.h"
 #include "Arduino.h"
 #include "Zigbee.h"
+#include "zcl/esp_zigbee_zcl_power_config.h"
+
 #include "sdkconfig.h"
 #include "Thermister.h"
 #include "Battery.h"
@@ -26,11 +28,12 @@ ZigbeeTemperatureSensorEndpoint temperatureSensorEndpoint1 = ZigbeeTemperatureSe
 ZigbeeTemperatureSensorEndpoint temperatureSensorEndpoint2 = ZigbeeTemperatureSensorEndpoint(2);
 
 void measureAndSleep() {
-    nvs_handle_t my_handle;
-    ESP_ERROR_CHECK(nvs_open("storage", NVS_READWRITE, &my_handle));
     battery.measure();
-    ESP_LOGI("main", "Batt: %ldmV(%d%%)", battery.mv(), battery.percent());
+    ESP_LOGI("main", "Batt: %ldmV %dcV (%d%%)", battery.mv(), battery.cv(), battery.percent());
     temperatureSensorEndpoint1.setBatteryPercentage(battery.percent());
+    temperatureSensorEndpoint1.setBatteryVoltage(battery.cv());
+    temperatureSensorEndpoint1.reportBatteryStatus();
+    delay(100);
     // get temperature and report
     float t1 = thermister1.temperature();
     temperatureSensorEndpoint1.setTemperature(t1);
@@ -42,15 +45,6 @@ void measureAndSleep() {
     temperatureSensorEndpoint2.report();
     delay(100);
 
-    esp_err_t err = nvs_set_i16(my_handle, "t1", (int16_t)(t1 * 100));
-    printf((err != ESP_OK) ? "T1 Failed!\n" : "T1 Done\n");
-    err = nvs_set_i16(my_handle, "t2", (int16_t)(t2 * 100));
-    printf((err != ESP_OK) ? "T2 Failed!\n" : "T2 Done\n");
-    ESP_LOGI("main", "T1: %.2f T2: %.2f", t1, t2);
-
-     err = nvs_commit(my_handle);
-    printf((err != ESP_OK) ? "Failed!\n" : "Done\n");
-    nvs_close(my_handle);
     // Put device to deep sleep
     ESP_LOGI("main", "Going to sleep now");
     digitalWrite(CONFIG_LED_GPIO, LOW);
@@ -74,8 +68,10 @@ void setup() {
     esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
     // Init Zigbee
+    battery.measure();
     temperatureSensorEndpoint1.setManufacturerAndModel("Cultr.Camp", "PT01");
-    temperatureSensorEndpoint1.setPowerSource(ZB_POWER_SOURCE_BATTERY, 100);
+    ESP_LOGI("main", "Batt: %ldmV %dcV (%d%%)", battery.mv(), battery.cv(), battery.percent());
+    temperatureSensorEndpoint1.setPowerSource(ZB_POWER_SOURCE_BATTERY, battery.percent(), battery.cv());
     temperatureSensorEndpoint1.setMinMaxValue(-25, 125);
     temperatureSensorEndpoint1.setTolerance(1);
     Zigbee.addEndpoint(&temperatureSensorEndpoint1);
@@ -103,45 +99,13 @@ void setup() {
         delay(500);
     }
     ESP_LOGI("ZIGBEE", "Successfully connected to Zigbee network. wait 10 sec for complete identify");
+    delay(1000);
 
-    nvs_handle_t my_handle;
-    ESP_ERROR_CHECK(nvs_open("storage", NVS_READWRITE, &my_handle));
-
-    int16_t t1 = 0;
-    err = nvs_get_i16(my_handle, "t1", &t1);
-    switch (err) {
-        case ESP_OK:
-            printf("Done\n");
-            printf("T1 = %d\n", t1);
-            break;
-        case ESP_ERR_NVS_NOT_FOUND:
-            printf("The value is not initialized yet!\n");
-            t1 = 0;
-            break;
-        default :
-            printf("Error (%s) reading!\n", esp_err_to_name(err));
-    }
-    temperatureSensorEndpoint1.setTemperature((float)t1 / 100);
-
-
-    int16_t t2 = 0;
-    err = nvs_get_i16(my_handle, "t2", &t2);
-    switch (err) {
-        case ESP_OK:
-            printf("Done\n");
-            printf("T2 = %d\n", t2);
-            break;
-        case ESP_ERR_NVS_NOT_FOUND:
-            printf("The value is not initialized yet!\n");
-            t2 = 0;
-            break;
-        default :
-            printf("Error (%s) reading!\n", esp_err_to_name(err));
-    }
-    temperatureSensorEndpoint2.setTemperature((float)t2 / 100);
-    nvs_close(my_handle);
+    temperatureSensorEndpoint1.setReport(ESP_ZB_ZCL_CLUSTER_ID_POWER_CONFIG, ESP_ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_VOLTAGE_ID);
+    temperatureSensorEndpoint1.setTemperature(thermister1.temperature());
+    temperatureSensorEndpoint2.setTemperature(thermister2.temperature());
     // Delay approx 1s (may be adjusted) to allow establishing proper connection with coordinator, needed for sleepy devices
-    delay(10000);
+    delay(5000);
 }
 
 void loop() {

@@ -34,15 +34,21 @@ public:
     }
 
     uint32_t mv() {
+        ESP_LOGI("Battery", "RAW: %ld, uint16: %d, uint8: %d", _voltage, (uint16_t)_voltage, (uint8_t)_voltage);
         return _voltage;
     }
 
+    uint8_t cv() {
+        ESP_LOGI("Battery", "CentiVolt: %d", (uint8_t)(_voltage/10));
+        return (uint8_t)(_voltage/100);
+    }
+
     uint8_t percent() {
-        ESP_LOGI("Bettery", "(%ld - %d) / (%d - %d) * 100) = %d", _voltage, ASSUME_ZERO_PERCENT_MV,
+        ESP_LOGI("Battery", "(%ld - %d) / (%d - %d) * 100 = %.3f", _voltage, ASSUME_ZERO_PERCENT_MV,
                  ASSUME_100_PERCENT_MV, ASSUME_ZERO_PERCENT_MV,
-                 (uint8_t)((_voltage - ASSUME_ZERO_PERCENT_MV) / (ASSUME_100_PERCENT_MV - ASSUME_ZERO_PERCENT_MV) * 100)
+                 ((float)_voltage - ASSUME_ZERO_PERCENT_MV) / (ASSUME_100_PERCENT_MV - ASSUME_ZERO_PERCENT_MV) * 100
         );
-        return (uint8_t)((_voltage - ASSUME_ZERO_PERCENT_MV) / (ASSUME_100_PERCENT_MV - ASSUME_ZERO_PERCENT_MV) * 100);
+        return ((float)_voltage - ASSUME_ZERO_PERCENT_MV) / (ASSUME_100_PERCENT_MV - ASSUME_ZERO_PERCENT_MV) * 100;
     }
 private:
     MovingAverage<uint32_t>* _buffer;
